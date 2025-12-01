@@ -719,14 +719,19 @@ function updateStats() {
     
     document.getElementById('diffLabel').textContent = `Unterschied (${percent > 0 ? '+' : ''}${percent}%)`;
 }
+// Am ENDE von app.js:
 if ('serviceWorker' in navigator) {
+  const basePath = window.location.pathname.split('/').slice(0, 3).join('/') + '/';
+  
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('sw.js')
+    navigator.serviceWorker.register(basePath + 'sw.js')
       .then(function(registration) {
-        console.log('Service Worker registriert');
+        console.log('Service Worker registriert für:', registration.scope);
       })
       .catch(function(error) {
         console.log('Service Worker Fehler:', error);
+        // Fallback: Ohne Pfad registrieren
+        navigator.serviceWorker.register('sw.js');
       });
   });
 }
