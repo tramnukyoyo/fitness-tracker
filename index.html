@@ -6,6 +6,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Fitness Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon.png">
+    <link rel="icon" href="icons/icon.png">
+    <meta name="theme-color" content="#000000">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -51,7 +55,7 @@
             <!-- Chart Canvas -->
             <div class="chart-container">
                 <canvas id="weightChart"></canvas>
-                <p id="emptyState" class="empty-state">Noch keine Daten vorhanden.<br/>Tippe auf 💬 um zu starten.</p>
+                <p id="emptyState" class="empty-state">Noch keine Daten vorhanden.<br/>Tippe auf + um zu starten.</p>
             </div>
         </section>
 
