@@ -125,13 +125,13 @@ function displayWeights() {
         weightHistory.innerHTML = '<p class="empty-state">Noch keine Einträge vorhanden</p>';
         return;
     }
-    
+
     const reversed = [...weights].reverse();
-    
+
     weightHistory.innerHTML = reversed.map(w => {
         const date = new Date(w.date);
         const formattedDate = date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
-        
+
         return `
             <div class="weight-entry-wrapper" data-id="${w.id}">
                 <div class="delete-bg">
@@ -152,38 +152,44 @@ function displayWeights() {
         const entryId = Number(wrapper.getAttribute('data-id'));
         const entryDiv = wrapper.querySelector('.weight-entry');
 
-        let localStartX = null;
-        let localCurrentX = null;
+        let startX = 0;
+        let currentX = 0;
+        let translateX = 0;
+        let isSwiping = false;
 
-        entryDiv.addEventListener('touchstart', (e) => {
+        const handleTouchStart = (e) => {
             if (e.touches.length !== 1) return;
-            localStartX = e.touches[0].clientX;
-            localCurrentX = localStartX;
-            entryDiv.classList.add('swiping');
-        });
+            startX = e.touches[0].clientX;
+            currentX = startX;
+            isSwiping = true;
+            entryDiv.style.transition = 'none'; // Deaktiviere Transition während des Swipens
+        };
 
-        entryDiv.addEventListener('touchmove', (e) => {
-            if (localStartX === null) return;
-            e.preventDefault();
-            localCurrentX = e.touches[0].clientX;
-            let deltaX = localCurrentX - localStartX;
-            if (deltaX < 0) {
-                entryDiv.style.transform = `translateX(${deltaX}px)`;
-            }
-        });
+        const handleTouchMove = (e) => {
+            if (!isSwiping) return;
+            currentX = e.touches[0].clientX;
+            translateX = Math.min(0, currentX - startX); // Nur nach links wischen
+            entryDiv.style.transform = `translateX(${translateX}px)`;
+        };
 
-        entryDiv.addEventListener('touchend', (e) => {
-            if (localStartX === null) return;
-            let deltaX = localCurrentX - localStartX;
-            entryDiv.classList.remove('swiping');
-            if (deltaX < -80) {
+        const handleTouchEnd = () => {
+            if (!isSwiping) return;
+            isSwiping = false;
+
+            // Wenn der Swipe weit genug ist, zeige den Löschen-Button
+            if (translateX < -80) {
+                entryDiv.style.transition = 'transform 0.2s ease-out';
                 entryDiv.style.transform = 'translateX(-100px)';
             } else {
-                entryDiv.style.transform = '';
+                // Zurücksetzen, wenn nicht weit genug geswiped
+                entryDiv.style.transition = 'transform 0.2s ease-out';
+                entryDiv.style.transform = 'translateX(0)';
             }
-            localStartX = null;
-            localCurrentX = null;
-        });
+        };
+
+        entryDiv.addEventListener('touchstart', handleTouchStart);
+        entryDiv.addEventListener('touchmove', handleTouchMove);
+        entryDiv.addEventListener('touchend', handleTouchEnd);
     });
 }
 
