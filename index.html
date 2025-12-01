@@ -3,23 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Base URL für GitHub Pages -->
-    <base href="/tramnukyoyo/REPO-NAME/">
-    
-    <!-- Apple Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Fitness">
     
+    <!-- Base Tag nur für GitHub Pages -->
+    <!-- ÄNDERE HIER: Ersetze "fitness-tracker" mit DEINEM Repository-Namen -->
+    <script>
+    if (window.location.hostname.includes('github.io')) {
+        // ÄNDERE DIESE ZEILE:
+        document.write('<base href="/tramnukyoyo/fitness-tracker/">');
+    }
+    </script>
+    
     <title>Fitness Tracker</title>
     
-    <!-- PWA -->
+    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
     <link rel="apple-touch-icon" href="icons/icon.png">
     <link rel="icon" href="icons/icon.png">
+    
+    <!-- Theme Color -->
     <meta name="theme-color" content="#000000">
     
+    <!-- Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
