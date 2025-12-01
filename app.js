@@ -32,14 +32,10 @@ modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal();
 });
 
-rangeBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-        rangeBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentTimeRange = btn.dataset.range;
-        updateChart();
-        updateStats();
-    });
+timeRangeSelect. addEventListener('change', (e) => {
+    currentTimeRange = e.target.value;
+    updateChart();
+    updateStats();
 });
 
 // Functions
@@ -126,42 +122,67 @@ function deleteWeight(id) {
 
 function displayWeights() {
     if (weights.length === 0) {
-        weightHistory.innerHTML = '<p class="empty-state">Noch keine Einträge vorhanden</p>';
+        weightHistory.innerHTML = '';
         return;
     }
     
-    const reversed = [...weights].reverse();
-    
-    weightHistory.innerHTML = reversed.map(entry => {
-        const formattedDate = new Date(entry.date).toLocaleDateString('de-DE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-        
-        const isSwiped = swipedItemId === entry.id;
+    weightHistory.innerHTML = weights.map(w => {
+        const date = new Date(w.date);
+        const formattedDate = date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
+        const isSwiped = swipedItemId === w.id;
         
         return `
-            <div class="weight-entry-wrapper">
-                <div class="delete-bg">
-                    <button class="delete-btn" onclick="deleteWeight(${entry.id})">Löschen</button>
+            <div class="weight-entry-wrapper" data-id="${w.id}">
+                <div class="weight-entry ${isSwiped ? 'swiped' : ''}" onclick="toggleSwipe(${w.id})">
+                    <div class="entry-date">${formattedDate}</div>
+                    <div class="entry-weight">${w.weight} kg</div>
                 </div>
-                <div class="weight-entry ${isSwiped ? 'swiped' : ''}" onclick="toggleSwipe(${entry.id})">
-                    <div class="weight-info">
-                        <div class="weight">${entry.weight} kg</div>
-                        <div class="date">${formattedDate}</div>
-                    </div>
-                    ${isSwiped ? '<div class="swipe-hint">← Wischen</div>' : ''}
-                </div>
+                <button class="delete-btn" onclick="deleteWeight(${w.id})">Löschen</button>
             </div>
         `;
     }).join('');
+
+    // Touch-Events für Swipe hinzufügen
+    document.querySelectorAll('.weight-entry-wrapper').forEach(wrapper => {
+        const entryId = Number(wrapper.getAttribute('data-id'));
+        const entryDiv = wrapper.querySelector('.weight-entry');
+
+        let localStartX = null;
+        let localCurrentX = null;
+
+        entryDiv.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            localStartX = e.touches[0].clientX;
+            localCurrentX = localStartX;
+            entryDiv.classList.add('swiping');
+        });
+
+        entryDiv.addEventListener('touchmove', (e) => {
+            if (localStartX === null) return;
+            localCurrentX = e.touches[0].clientX;
+            let deltaX = localCurrentX - localStartX;
+            if (deltaX < 0) {
+                entryDiv.style.transform = `translateX(${deltaX}px)`;
+            }
+        });
+
+        entryDiv.addEventListener('touchend', (e) => {
+            if (localStartX === null) return;
+            let deltaX = localCurrentX - localStartX;
+            entryDiv.classList.remove('swiping');
+            if (deltaX < -80) {
+                swipedItemId = entryId;
+                entryDiv.style.transform = 'translateX(-100px)';
+            } else {
+                entryDiv.style.transform = '';
+            }
+            localStartX = null;
+            localCurrentX = null;
+        });
+    });
 }
 
-function toggleSwipe(id) {
-    swipedItemId = swipedItemId === id ? null : id;
-    displayWeights();
-}
+
 
 function getFilteredWeights() {
     if (weights.length === 0) return [];

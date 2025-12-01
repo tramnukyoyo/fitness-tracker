@@ -37,7 +37,7 @@ h1 {
 }
 
 .add-btn {
-    background-color: #2c2c2e;
+    background-color: #0a84ff;
     color: #ffffff;
     border: none;
     border-radius: 12px;
@@ -50,7 +50,7 @@ h1 {
     justify-content: center;
     position: absolute;
     right: 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
 }
 
 .add-btn:active {
@@ -88,33 +88,25 @@ h1 {
 }
 
 /* Time Range Picker */
+/* TIME RANGE PICKER */
 .time-range-picker {
     margin-bottom: 20px;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 5px;
 }
 
-.range-btn {
+.time-range-picker select {
+    width: 100%;
     background-color: #2c2c2e;
     color: #ffffff;
     border: none;
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-size: 0.85rem;
-    font-weight: 500;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 1rem;
     cursor: pointer;
-    margin-right: 8px;
-    white-space: nowrap;
+    outline: none;
 }
 
-.range-btn.active {
-    background-color: #0a84ff;
-}
-
-.range-btn:active {
-    transform: scale(0.95);
+.time-range-picker select:focus {
+    background-color: #3a3a3c;
 }
 
 /* Chart */
@@ -171,6 +163,7 @@ h2 {
     align-items: center;
     justify-content: center;
     border-radius: 8px;
+    touch-action: pan-y;
 }
 
 .delete-btn {
@@ -193,6 +186,7 @@ h2 {
     position: relative;
     transition: transform 0.3s ease;
     cursor: pointer;
+    z-index: 2;
 }
 
 .weight-entry.swiped {
