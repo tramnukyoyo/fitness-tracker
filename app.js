@@ -14,7 +14,7 @@ const dayPicker = document.getElementById('dayPicker');
 const monthPicker = document.getElementById('monthPicker');
 const yearPicker = document.getElementById('yearPicker');
 const weightHistory = document.getElementById('weightHistory');
-const rangeBtns = document.querySelectorAll('.range-btn');
+const timeRangeSelect = document.getElementById('timeRangeSelect');
 const statsDisplay = document.getElementById('statsDisplay');
 const emptyState = document.getElementById('emptyState');
 
@@ -32,7 +32,7 @@ modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal();
 });
 
-timeRangeSelect. addEventListener('change', (e) => {
+timeRangeSelect.addEventListener('change', (e) => {
     currentTimeRange = e.target.value;
     updateChart();
     updateStats();
@@ -122,22 +122,27 @@ function deleteWeight(id) {
 
 function displayWeights() {
     if (weights.length === 0) {
-        weightHistory.innerHTML = '';
+        weightHistory.innerHTML = '<p class="empty-state">Noch keine Einträge vorhanden</p>';
         return;
     }
     
-    weightHistory.innerHTML = weights.map(w => {
+    const reversed = [...weights].reverse();
+    
+    weightHistory.innerHTML = reversed.map(w => {
         const date = new Date(w.date);
         const formattedDate = date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
-        const isSwiped = swipedItemId === w.id;
         
         return `
             <div class="weight-entry-wrapper" data-id="${w.id}">
-                <div class="weight-entry ${isSwiped ? 'swiped' : ''}" onclick="toggleSwipe(${w.id})">
-                    <div class="entry-date">${formattedDate}</div>
-                    <div class="entry-weight">${w.weight} kg</div>
+                <div class="delete-bg">
+                    <button class="delete-btn" onclick="deleteWeight(${w.id})">Löschen</button>
                 </div>
-                <button class="delete-btn" onclick="deleteWeight(${w.id})">Löschen</button>
+                <div class="weight-entry">
+                    <div class="weight-info">
+                        <div class="weight">${w.weight} kg</div>
+                        <div class="date">${formattedDate}</div>
+                    </div>
+                </div>
             </div>
         `;
     }).join('');
@@ -159,6 +164,7 @@ function displayWeights() {
 
         entryDiv.addEventListener('touchmove', (e) => {
             if (localStartX === null) return;
+            e.preventDefault();
             localCurrentX = e.touches[0].clientX;
             let deltaX = localCurrentX - localStartX;
             if (deltaX < 0) {
@@ -171,7 +177,6 @@ function displayWeights() {
             let deltaX = localCurrentX - localStartX;
             entryDiv.classList.remove('swiping');
             if (deltaX < -80) {
-                swipedItemId = entryId;
                 entryDiv.style.transform = 'translateX(-100px)';
             } else {
                 entryDiv.style.transform = '';
@@ -181,8 +186,6 @@ function displayWeights() {
         });
     });
 }
-
-
 
 function getFilteredWeights() {
     if (weights.length === 0) return [];
