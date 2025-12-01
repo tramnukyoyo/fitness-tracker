@@ -36,17 +36,16 @@
 
             <!-- Zeitraum Picker -->
             <div class="time-range-picker">
-<div class="time-range-picker">
-    <select id="timeRangeSelect">
-        <option value="Alle">Alle</option>
-        <option value="1 Woche">1 Woche</option>
-        <option value="1 Monat">1 Monat</option>
-        <option value="2 Monate">2 Monate</option>
-        <option value="3 Monate">3 Monate</option>
-        <option value="6 Monate">6 Monate</option>
-        <option value="1 Jahr">1 Jahr</option>
-        <option value="Seit Anfang">Seit Anfang</option>
-    </select>
+                <select id="timeRangeSelect">
+                    <option value="Alle">Alle</option>
+                    <option value="1 Woche">1 Woche</option>
+                    <option value="1 Monat">1 Monat</option>
+                    <option value="2 Monate">2 Monate</option>
+                    <option value="3 Monate">3 Monate</option>
+                    <option value="6 Monate">6 Monate</option>
+                    <option value="1 Jahr">1 Jahr</option>
+                    <option value="Seit Anfang">Seit Anfang</option>
+                </select>
             </div>
 
             <!-- Chart Canvas -->
@@ -89,6 +88,25 @@
                         <select id="monthPicker"></select>
                         <select id="yearPicker"></select>
                     </div>
+                </div>
+
+                <!-- BILDER UPLOAD (NEU) -->
+                <div class="input-group">
+                    <label>Bilder hinzufügen (optional)</label>
+                    <div class="image-upload-container">
+                        <input type="file" 
+                               id="imageUpload" 
+                               accept="image/*" 
+                               multiple 
+                               style="display: none;">
+                        <button type="button" id="cameraBtn" class="camera-btn">
+                            📷 Kamera
+                        </button>
+                        <button type="button" id="galleryBtn" class="gallery-btn">
+                            📁 Galerie
+                        </button>
+                    </div>
+                    <div id="imagePreview" class="image-preview"></div>
                 </div>
             </div>
         </div>
