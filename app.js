@@ -31,7 +31,6 @@ const nsunsDetailView = document.getElementById('nsunsDetailView');
 // Nsuns Elements
 const weeksList = document.getElementById('weeksList');
 const backToWeeksBtn = document.getElementById('backToWeeksBtn');
-const weekDetailTitle = document.getElementById('weekDetailTitle');
 const workoutTabs = document.querySelectorAll('.workout-tab');
 const workoutAContent = document.getElementById('workoutAContent');
 const workoutBContent = document.getElementById('workoutBContent');
@@ -163,17 +162,75 @@ function displayTrainingWeeks() {
         });
         
         return `
-            <div class="week-card" onclick="openWeekDetail(${week.id})">
-                <div class="week-date">${formattedDate}</div>
-                <div class="week-progress">
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" style="width: ${week.percentage}%"></div>
+            <div class="week-card-wrapper" data-week-id="${week.id}">
+                <div class="week-delete-bg">
+                    <button class="week-delete-btn" onclick="deleteTrainingWeek(${week.id})">Löschen</button>
+                </div>
+                <div class="week-card" onclick="openWeekDetail(${week.id})">
+                    <div class="week-date">${formattedDate}</div>
+                    <div class="week-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: ${week.percentage}%"></div>
+                        </div>
+                        <div class="progress-text">${week.percentage}%</div>
                     </div>
-                    <div class="progress-text">${week.percentage}%</div>
                 </div>
             </div>
         `;
     }).join('');
+    
+    // Swipe Events hinzufügen
+    addWeekSwipeEvents();
+}
+
+function addWeekSwipeEvents() {
+    document.querySelectorAll('.week-card-wrapper').forEach(wrapper => {
+        const weekCard = wrapper.querySelector('.week-card');
+        
+        let startX = 0;
+        let currentX = 0;
+        let translateX = 0;
+        let isSwiping = false;
+        
+        const handleTouchStart = (e) => {
+            if (e.touches.length !== 1) return;
+            startX = e.touches[0].clientX;
+            currentX = startX;
+            isSwiping = true;
+            weekCard.classList.add('swiping');
+        };
+        
+        const handleTouchMove = (e) => {
+            if (!isSwiping) return;
+            currentX = e.touches[0].clientX;
+            translateX = Math.min(0, currentX - startX);
+            weekCard.style.transform = `translateX(${translateX}px)`;
+        };
+        
+        const handleTouchEnd = () => {
+            if (!isSwiping) return;
+            isSwiping = false;
+            weekCard.classList.remove('swiping');
+            
+            if (translateX < -80) {
+                weekCard.style.transition = 'transform 0.2s ease-out';
+                weekCard.style.transform = 'translateX(-100px)';
+            } else {
+                weekCard.style.transition = 'transform 0.2s ease-out';
+                weekCard.style.transform = 'translateX(0)';
+            }
+        };
+        
+        weekCard.addEventListener('touchstart', handleTouchStart, { passive: true });
+        weekCard.addEventListener('touchmove', handleTouchMove, { passive: true });
+        weekCard.addEventListener('touchend', handleTouchEnd);
+    });
+}
+
+function deleteTrainingWeek(weekId) {
+    trainingWeeks = trainingWeeks.filter(w => w.id !== weekId);
+    saveTrainingWeeks();
+    displayTrainingWeeks();
 }
 
 function openWeekDetail(weekId) {
@@ -189,12 +246,16 @@ function openWeekDetail(weekId) {
         year: 'numeric'
     });
     
-    weekDetailTitle.textContent = `Trainingswoche ${formattedDate}`;
+    // Dropdown Text ändern zu Datum
+    currentViewName.textContent = formattedDate;
     
     // Views wechseln
     nsunsView.classList.remove('active');
     nsunsDetailView.classList.add('active');
     addBtn.style.display = 'none';
+    
+    // Zurück-Button anzeigen
+    backToWeeksBtn.style.display = 'block';
 }
 
 backToWeeksBtn.addEventListener('click', () => {
@@ -202,6 +263,12 @@ backToWeeksBtn.addEventListener('click', () => {
     nsunsView.classList.add('active');
     addBtn.style.display = 'flex';
     currentWeekId = null;
+    
+    // Zurück-Button verstecken
+    backToWeeksBtn.style.display = 'none';
+    
+    // Dropdown Text zurück zu "Nsuns"
+    currentViewName.textContent = 'Nsuns';
 });
 
 // Workout Tabs

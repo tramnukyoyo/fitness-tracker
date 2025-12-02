@@ -12,6 +12,11 @@
     <div class="container">
         <!-- Header mit Dropdown -->
         <header>
+            <!-- Zurück-Button (nur in Nsuns Detail sichtbar) -->
+            <button id="backToWeeksBtn" class="back-btn-header" style="display: none;">
+                ← Zurück
+            </button>
+            
             <div class="header-title-wrapper">
                 <button id="viewDropdownBtn" class="view-dropdown-btn">
                     <span id="currentViewName">Fortschritt</span>
@@ -87,11 +92,6 @@
 
         <!-- NSUNS VIEW - WOCHENDETAIL -->
         <div id="nsunsDetailView" class="view-content">
-            <div class="detail-header">
-                <button id="backToWeeksBtn" class="back-btn">← Zurück</button>
-                <h2 id="weekDetailTitle">Trainingswoche</h2>
-            </div>
-            
             <div class="workout-tabs">
                 <button class="workout-tab active" data-workout="a">Workout A</button>
                 <button class="workout-tab" data-workout="b">Workout B</button>

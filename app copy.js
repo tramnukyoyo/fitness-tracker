@@ -67,6 +67,9 @@ initIndexedDB().then(() => {
     displayTrainingWeeks();
 });
 
+// Plus-Button initial korrekt setzen
+switchView('fortschritt');
+
 // ============================
 // VIEW SWITCHING
 // ============================
