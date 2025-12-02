@@ -2,11 +2,13 @@
 // STATE
 // ============================
 let weights = JSON.parse(localStorage.getItem('weights')) || [];
+let trainingWeeks = JSON.parse(localStorage.getItem('trainingWeeks')) || [];
 let currentTimeRange = 'Alle';
 let swipedItemId = null;
 let chart = null;
 let selectedImages = [];
-let currentView = 'fortschritt'; // Aktuelle Ansicht
+let currentView = 'fortschritt';
+let currentWeekId = null; // Für Detailansicht
 
 // IndexedDB
 let db = null;
@@ -24,8 +26,17 @@ const currentViewName = document.getElementById('currentViewName');
 const dropdownItems = document.querySelectorAll('.dropdown-item');
 const fortschrittView = document.getElementById('fortschrittView');
 const nsunsView = document.getElementById('nsunsView');
+const nsunsDetailView = document.getElementById('nsunsDetailView');
 
-// Original Elements
+// Nsuns Elements
+const weeksList = document.getElementById('weeksList');
+const backToWeeksBtn = document.getElementById('backToWeeksBtn');
+const weekDetailTitle = document.getElementById('weekDetailTitle');
+const workoutTabs = document.querySelectorAll('.workout-tab');
+const workoutAContent = document.getElementById('workoutAContent');
+const workoutBContent = document.getElementById('workoutBContent');
+
+// Fortschritt Elements
 const modal = document.getElementById('modal');
 const addBtn = document.getElementById('addBtn');
 const cancelBtn = document.getElementById('cancelBtn');
@@ -53,6 +64,7 @@ initIndexedDB().then(() => {
     displayWeights();
     updateChart();
     updateStats();
+    displayTrainingWeeks();
 });
 
 // ============================
@@ -64,7 +76,6 @@ viewDropdownBtn.addEventListener('click', (e) => {
     viewDropdownBtn.classList.toggle('open');
 });
 
-// Dropdown schließen bei Klick außerhalb
 document.addEventListener('click', (e) => {
     if (!viewDropdownBtn.contains(e.target) && !viewDropdownMenu.contains(e.target)) {
         viewDropdownMenu.classList.remove('show');
@@ -72,18 +83,15 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// View wechseln
 dropdownItems.forEach(item => {
     item.addEventListener('click', () => {
         const view = item.dataset.view;
         switchView(view);
         
-        // UI Update
         dropdownItems.forEach(i => i.classList.remove('active'));
         item.classList.add('active');
         currentViewName.textContent = item.textContent;
         
-        // Dropdown schließen
         viewDropdownMenu.classList.remove('show');
         viewDropdownBtn.classList.remove('open');
     });
@@ -92,24 +100,135 @@ dropdownItems.forEach(item => {
 function switchView(view) {
     currentView = view;
     
-    // Alle Views ausblenden
     fortschrittView.classList.remove('active');
     nsunsView.classList.remove('active');
+    nsunsDetailView.classList.remove('active');
     
-    // Gewählte View anzeigen
     if (view === 'fortschritt') {
         fortschrittView.classList.add('active');
-        addBtn.style.display = 'flex'; // Plus-Button anzeigen
+        addBtn.style.display = 'flex';
+        addBtn.onclick = openModal;
     } else if (view === 'nsuns') {
         nsunsView.classList.add('active');
-        addBtn.style.display = 'none'; // Plus-Button verstecken (vorerst)
+        addBtn.style.display = 'flex';
+        addBtn.onclick = createNewTrainingWeek;
     }
 }
 
 // ============================
-// EVENT LISTENER (Original)
+// NSUNS - TRAININGSWOCHEN
 // ============================
-addBtn.addEventListener('click', openModal);
+
+function createNewTrainingWeek() {
+    const today = new Date();
+    const dateString = today.toISOString().split('T')[0];
+    
+    const newWeek = {
+        id: Date.now(),
+        startDate: dateString,
+        completedExercises: 0,
+        totalExercises: 18,
+        percentage: 0,
+        workoutA: {
+            exercises: [] // Später
+        },
+        workoutB: {
+            exercises: [] // Später
+        }
+    };
+    
+    trainingWeeks.push(newWeek);
+    saveTrainingWeeks();
+    displayTrainingWeeks();
+}
+
+function displayTrainingWeeks() {
+    if (trainingWeeks.length === 0) {
+        weeksList.innerHTML = '<p class="empty-state">Noch keine Trainingswochen.<br/>Tippe auf + um zu starten.</p>';
+        return;
+    }
+    
+    // Neueste zuerst
+    const sortedWeeks = [...trainingWeeks].sort((a, b) => b.id - a.id);
+    
+    weeksList.innerHTML = sortedWeeks.map(week => {
+        const date = new Date(week.startDate);
+        const formattedDate = date.toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        });
+        
+        return `
+            <div class="week-card" onclick="openWeekDetail(${week.id})">
+                <div class="week-date">${formattedDate}</div>
+                <div class="week-progress">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: ${week.percentage}%"></div>
+                    </div>
+                    <div class="progress-text">${week.percentage}%</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function openWeekDetail(weekId) {
+    currentWeekId = weekId;
+    const week = trainingWeeks.find(w => w.id === weekId);
+    
+    if (!week) return;
+    
+    const date = new Date(week.startDate);
+    const formattedDate = date.toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+    });
+    
+    weekDetailTitle.textContent = `Trainingswoche ${formattedDate}`;
+    
+    // Views wechseln
+    nsunsView.classList.remove('active');
+    nsunsDetailView.classList.add('active');
+    addBtn.style.display = 'none';
+}
+
+backToWeeksBtn.addEventListener('click', () => {
+    nsunsDetailView.classList.remove('active');
+    nsunsView.classList.add('active');
+    addBtn.style.display = 'flex';
+    currentWeekId = null;
+});
+
+// Workout Tabs
+workoutTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        const workout = tab.dataset.workout;
+        
+        // Tabs aktualisieren
+        workoutTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Content wechseln
+        workoutAContent.classList.remove('active');
+        workoutBContent.classList.remove('active');
+        
+        if (workout === 'a') {
+            workoutAContent.classList.add('active');
+        } else {
+            workoutBContent.classList.add('active');
+        }
+    });
+});
+
+function saveTrainingWeeks() {
+    localStorage.setItem('trainingWeeks', JSON.stringify(trainingWeeks));
+}
+
+// ============================
+// FORTSCHRITT - EVENT LISTENER
+// ============================
 cancelBtn.addEventListener('click', closeModal);
 saveBtn.addEventListener('click', saveWeight);
 modal.addEventListener('click', (e) => {
@@ -135,7 +254,7 @@ galleryBtn.addEventListener('click', () => {
 imageUpload.addEventListener('change', handleImageSelection);
 
 // ============================
-// INDEXEDDB (Unverändert aus deinem Code)
+// INDEXEDDB
 // ============================
 function initIndexedDB() {
     return new Promise((resolve, reject) => {
@@ -396,7 +515,7 @@ async function deleteWeight(id) {
 }
 
 // ============================
-// ANZEIGE (Rest deines Codes)
+// ANZEIGE
 // ============================
 async function displayWeights() {
     if (weights.length === 0) {
