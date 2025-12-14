@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "WebSearch",
+      "WebFetch(domain:spongebob.fandom.com)"
+    ]
+  }
+}

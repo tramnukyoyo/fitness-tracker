@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icons/icon.png">
     <title>Fitness Tracker</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,7 +19,7 @@
             <button id="backToWeeksBtn" class="back-btn-header" style="display: none;">
                 ← Zurück
             </button>
-            
+
             <div class="header-title-wrapper">
                 <button id="viewDropdownBtn" class="view-dropdown-btn">
                     <span id="currentViewName">Fortschritt</span>
@@ -78,6 +81,10 @@
                     <p class="empty-state">Noch keine Einträge vorhanden</p>
                 </div>
             </section>
+
+            <!-- Settings/Backup Section -->
+            <section id="settingsSection" class="settings-section">
+            </section>
         </div>
 
         <!-- NSUNS VIEW - ÜBERSICHT -->
@@ -93,22 +100,26 @@
         <!-- NSUNS VIEW - WOCHENDETAIL -->
         <div id="nsunsDetailView" class="view-content">
             <div class="workout-tabs">
-                <button class="workout-tab active" data-workout="a">Workout A</button>
-                <button class="workout-tab" data-workout="b">Workout B</button>
+                <button class="workout-tab active" data-workout="a">A</button>
+                <button class="workout-tab" data-workout="b">B</button>
+                <button class="workout-tab" data-workout="c">C</button>
+                <button class="workout-tab" data-workout="d">D</button>
             </div>
 
             <!-- Workout A Content -->
             <div id="workoutAContent" class="workout-content active">
-                <p style="color: #888; padding: 40px 20px; text-align: center;">
-                    Workout A - Kommt bald!
-                </p>
             </div>
 
             <!-- Workout B Content -->
             <div id="workoutBContent" class="workout-content">
-                <p style="color: #888; padding: 40px 20px; text-align: center;">
-                    Workout B - Kommt bald!
-                </p>
+            </div>
+
+            <!-- Workout C Content -->
+            <div id="workoutCContent" class="workout-content">
+            </div>
+
+            <!-- Workout D Content -->
+            <div id="workoutDContent" class="workout-content">
             </div>
         </div>
     </div>
@@ -143,10 +154,10 @@
                 <div class="input-group">
                     <label>Bilder hinzufügen (optional)</label>
                     <div class="image-upload-container">
-                        <input type="file" 
-                               id="imageUpload" 
-                               accept="image/*" 
-                               multiple 
+                        <input type="file"
+                               id="imageUpload"
+                               accept="image/*"
+                               multiple
                                style="display: none;">
                         <button type="button" id="cameraBtn" class="camera-btn">
                             📷 Kamera
@@ -161,7 +172,42 @@
         </div>
     </div>
 
+    <!-- Modal für Training Max eingeben -->
+    <div id="tmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button id="tmCancelBtn" class="modal-btn">Abbrechen</button>
+                <h2>Training Max</h2>
+                <button id="tmSaveBtn" class="modal-btn done">Starten</button>
+            </div>
+
+            <div class="modal-body">
+                <p class="tm-info">Gib deine Training Maxes ein (ca. 90% deines 1RM)</p>
+
+                <div class="input-group">
+                    <label>Bench Press (kg)</label>
+                    <input type="number" id="tmBench" placeholder="z.B. 80" step="2.5" value="60" />
+                </div>
+
+                <div class="input-group">
+                    <label>Squat (kg)</label>
+                    <input type="number" id="tmSquat" placeholder="z.B. 100" step="2.5" value="80" />
+                </div>
+
+                <div class="input-group">
+                    <label>Overhead Press (kg)</label>
+                    <input type="number" id="tmOHP" placeholder="z.B. 50" step="2.5" value="40" />
+                </div>
+
+                <div class="input-group">
+                    <label>Deadlift (kg)</label>
+                    <input type="number" id="tmDeadlift" placeholder="z.B. 120" step="2.5" value="100" />
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="app.js"></script>
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>

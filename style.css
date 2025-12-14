@@ -660,31 +660,310 @@ h2 {
     font-size: 1rem;
 }
 
+/* ============================== */
+/* NSUNS WORKOUT DETAIL */
+/* ============================== */
+
+.workout-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.tm-display {
+    background-color: #2c2c2e;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+}
+
+.tm-display h4 {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.tm-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tm-item {
+    background-color: #3a3a3c;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #fff;
+}
+
+.exercise-card {
+    background-color: #1c1c1e;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.exercise-card.main {
+    border-left: 4px solid #ff9500;
+}
+
+.exercise-card.secondary {
+    border-left: 4px solid #0a84ff;
+}
+
+.exercise-card.accessory {
+    border-left: 4px solid #30d158;
+}
+
+.exercise-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background-color: #2c2c2e;
+}
+
+.exercise-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    color: #fff;
+}
+
+.exercise-type-badge {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.exercise-type-badge.main {
+    background-color: rgba(255, 149, 0, 0.2);
+    color: #ff9500;
+}
+
+.exercise-type-badge.secondary {
+    background-color: rgba(10, 132, 255, 0.2);
+    color: #0a84ff;
+}
+
+.exercise-type-badge.accessory {
+    background-color: rgba(48, 209, 88, 0.2);
+    color: #30d158;
+}
+
+.sets-container {
+    padding: 8px;
+}
+
+.set-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 1fr 44px;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 8px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    background-color: #2c2c2e;
+    transition: background-color 0.2s;
+}
+
+.set-row.completed {
+    background-color: rgba(48, 209, 88, 0.15);
+}
+
+.set-number {
+    font-size: 0.75rem;
+    color: #888;
+    font-weight: 500;
+}
+
+.set-target {
+    font-size: 0.85rem;
+    color: #fff;
+}
+
+.set-target .percentage {
+    font-size: 0.7rem;
+    color: #888;
+    margin-left: 4px;
+}
+
+.set-actual {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.set-actual input {
+    width: 50px;
+    background-color: #3a3a3c;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 6px;
+    color: #fff;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.set-actual input:focus {
+    outline: 2px solid #0a84ff;
+    background-color: #48484a;
+}
+
+.set-actual span {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+.set-complete-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #3a3a3c;
+    background-color: transparent;
+    color: #888;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.set-complete-btn:active {
+    transform: scale(0.95);
+}
+
+.set-complete-btn.done {
+    background-color: #30d158;
+    border-color: #30d158;
+    color: #fff;
+}
+
+/* ============================== */
+/* BACKUP SECTION */
+/* ============================== */
+
+.settings-section {
+    margin-top: 30px;
+}
+
+.backup-section {
+    background-color: #1c1c1e;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.backup-section h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 16px;
+}
+
+.backup-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.backup-btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.backup-btn.export {
+    background-color: #0a84ff;
+    color: #fff;
+}
+
+.backup-btn.import {
+    background-color: #3a3a3c;
+    color: #fff;
+}
+
+.backup-btn:active {
+    transform: scale(0.98);
+}
+
+.backup-info {
+    font-size: 0.8rem;
+    color: #888;
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* TM Modal Info */
+.tm-info {
+    font-size: 0.9rem;
+    color: #888;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     body {
         padding: 15px;
     }
-    
+
     .stats-display {
         gap: 10px;
     }
-    
+
     .image-upload-container {
         flex-direction: column;
     }
-    
+
     .camera-btn, .gallery-btn {
         width: 100%;
     }
-    
+
     .preview-thumbnail {
         width: 70px;
         height: 70px;
     }
-    
+
     .entry-image-thumb {
         width: 45px;
         height: 45px;
+    }
+
+    .set-row {
+        grid-template-columns: 40px 1fr 100px 40px;
+        gap: 6px;
+        padding: 8px 6px;
+    }
+
+    .set-actual input {
+        width: 40px;
+        padding: 6px 4px;
+        font-size: 0.8rem;
+    }
+
+    .tm-values {
+        gap: 6px;
+    }
+
+    .tm-item {
+        font-size: 0.75rem;
+        padding: 5px 8px;
+    }
+
+    .backup-buttons {
+        flex-direction: column;
     }
 }
