@@ -31,10 +31,13 @@ const nsunsDetailView = document.getElementById('nsunsDetailView');
 // Nsuns Elements
 const weeksList = document.getElementById('weeksList');
 const backToWeeksBtn = document.getElementById('backToWeeksBtn');
-const weekDetailTitle = document.getElementById('weekDetailTitle');
 const workoutTabs = document.querySelectorAll('.workout-tab');
 const workoutAContent = document.getElementById('workoutAContent');
 const workoutBContent = document.getElementById('workoutBContent');
+const rmInputA = document.getElementById('rmInputA');
+const rmInputB = document.getElementById('rmInputB');
+const workoutASets = document.getElementById('workoutASets');
+const workoutBSets = document.getElementById('workoutBSets');
 
 // Fortschritt Elements
 const modal = document.getElementById('modal');
@@ -122,9 +125,43 @@ function switchView(view) {
 // NSUNS - TRAININGSWOCHEN
 // ============================
 
+// Workout A und B Konfiguration
+const WORKOUT_A_CONFIG = [
+    { reps: 8, percentage: 65 },
+    { reps: 6, percentage: 75 },
+    { reps: 4, percentage: 85 },
+    { reps: 4, percentage: 85 },
+    { reps: 4, percentage: 85 },
+    { reps: 5, percentage: 80 },
+    { reps: 6, percentage: 75 },
+    { reps: 7, percentage: 70 },
+    { reps: 8, percentage: 65 }
+];
+
+const WORKOUT_B_CONFIG = [
+    { reps: 5, percentage: 75 },
+    { reps: 3, percentage: 85 },
+    { reps: 1, percentage: 95 },
+    { reps: 3, percentage: 90 },
+    { reps: 5, percentage: 85 },
+    { reps: 3, percentage: 80 },
+    { reps: 5, percentage: 75 },
+    { reps: 3, percentage: 70 },
+    { reps: 5, percentage: 65 }
+];
+
 function createNewTrainingWeek() {
     const today = new Date();
     const dateString = today.toISOString().split('T')[0];
+    
+    // Prüfen ob vorherige Woche komplett (18/18)
+    let initialRM = 0;
+    if (trainingWeeks.length > 0) {
+        const lastWeek = trainingWeeks[trainingWeeks.length - 1];
+        if (lastWeek.completedExercises === 18 && lastWeek.oneRepMax > 0) {
+            initialRM = lastWeek.oneRepMax + 2.5;
+        }
+    }
     
     const newWeek = {
         id: Date.now(),
@@ -132,17 +169,176 @@ function createNewTrainingWeek() {
         completedExercises: 0,
         totalExercises: 18,
         percentage: 0,
+        oneRepMax: initialRM,
         workoutA: {
-            exercises: [] // Später
+            completed: Array(9).fill(false)
         },
         workoutB: {
-            exercises: [] // Später
+            completed: Array(9).fill(false)
         }
     };
     
     trainingWeeks.push(newWeek);
     saveTrainingWeeks();
     displayTrainingWeeks();
+}
+
+function openWeekDetail(weekId) {
+    currentWeekId = weekId;
+    const week = trainingWeeks.find(w => w.id === weekId);
+    
+    if (!week) return;
+    
+    const date = new Date(week.startDate);
+    const formattedDate = date.toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+    });
+    
+    // Dropdown Text ändern zu Datum
+    currentViewName.textContent = formattedDate;
+    
+    // Views wechseln
+    nsunsView.classList.remove('active');
+    nsunsDetailView.classList.add('active');
+    addBtn.style.display = 'none';
+    
+    // Zurück-Button anzeigen
+    backToWeeksBtn.style.display = 'block';
+    
+    // 1RM Inputs setzen und Workouts rendern
+    rmInputA.value = week.oneRepMax || '';
+    rmInputB.value = week.oneRepMax || '';
+    renderWorkout('A');
+    renderWorkout('B');
+}
+
+// 1RM Input Handler
+rmInputA.addEventListener('input', () => {
+    const week = getCurrentWeek();
+    if (!week) return;
+    
+    const value = parseFloat(rmInputA.value) || 0;
+    week.oneRepMax = value;
+    rmInputB.value = value; // Sync
+    saveTrainingWeeks();
+    renderWorkout('A');
+    renderWorkout('B');
+});
+
+rmInputB.addEventListener('input', () => {
+    const week = getCurrentWeek();
+    if (!week) return;
+    
+    const value = parseFloat(rmInputB.value) || 0;
+    week.oneRepMax = value;
+    rmInputA.value = value; // Sync
+    saveTrainingWeeks();
+    renderWorkout('A');
+    renderWorkout('B');
+});
+
+function getCurrentWeek() {
+    return trainingWeeks.find(w => w.id === currentWeekId);
+}
+
+// ============================
+// GEWICHTSBERECHNUNG
+// ============================
+
+function calculateWorkingWeight(oneRM, percentage) {
+    if (!oneRM || oneRM <= 0) return 0;
+    
+    const rawWeight = (oneRM * percentage) / 100;
+    
+    // Auf nächstes darstellbares Gewicht runden (2.5kg Schritte)
+    // Minimum: 20kg (nur Stange)
+    const rounded = Math.round(rawWeight / 2.5) * 2.5;
+    
+    return Math.max(20, rounded);
+}
+
+function calculatePlates(weight) {
+    if (weight < 20) return "Nicht möglich";
+    
+    const plateWeight = (weight - 20) / 2; // Pro Seite
+    
+    if (plateWeight === 0) return "Nur Stange";
+    
+    const plates = [20, 15, 10, 5, 2.5, 1.25];
+    let remaining = plateWeight;
+    let combination = [];
+    
+    for (const plate of plates) {
+        const count = Math.floor(remaining / plate);
+        if (count > 0) {
+            combination.push(`${count}×${plate}kg`);
+            remaining -= count * plate;
+        }
+    }
+    
+    if (Math.abs(remaining) > 0.01) {
+        return "Fehler bei Berechnung";
+    }
+    
+    return `[2×${combination.join(' + 2×')}]`;
+}
+
+// ============================
+// WORKOUT RENDERING
+// ============================
+
+function renderWorkout(workout) {
+    const week = getCurrentWeek();
+    if (!week) return;
+    
+    const config = workout === 'A' ? WORKOUT_A_CONFIG : WORKOUT_B_CONFIG;
+    const container = workout === 'A' ? workoutASets : workoutBSets;
+    const completed = workout === 'A' ? week.workoutA.completed : week.workoutB.completed;
+    
+    container.innerHTML = config.map((set, index) => {
+        const weight = calculateWorkingWeight(week.oneRepMax, set.percentage);
+        const plates = calculatePlates(weight);
+        const isCompleted = completed[index];
+        
+        return `
+            <div class="set-card ${isCompleted ? 'completed' : ''}" 
+                 onclick="toggleSet('${workout}', ${index})">
+                <div class="set-main-info">
+                    <div class="set-text">
+                        Satz ${index + 1}: ${set.reps} Wiederholungen mit ${weight}kg
+                    </div>
+                    <div class="set-checkmark">✓</div>
+                </div>
+                <div class="set-details">
+                    <span class="set-plates">${plates}</span>
+                    <span class="set-percentage">${set.percentage}% 1RM</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleSet(workout, setIndex) {
+    const week = getCurrentWeek();
+    if (!week) return;
+    
+    const completedArray = workout === 'A' ? week.workoutA.completed : week.workoutB.completed;
+    
+    // Toggle
+    completedArray[setIndex] = !completedArray[setIndex];
+    
+    // Zähle abgeschlossene Übungen
+    const totalCompleted = week.workoutA.completed.filter(c => c).length + 
+                          week.workoutB.completed.filter(c => c).length;
+    
+    week.completedExercises = totalCompleted;
+    week.percentage = Math.round((totalCompleted / 18) * 100);
+    
+    saveTrainingWeeks();
+    renderWorkout(workout);
+    displayTrainingWeeks(); // Update Prozent in Liste
 }
 
 function displayTrainingWeeks() {
@@ -163,17 +359,75 @@ function displayTrainingWeeks() {
         });
         
         return `
-            <div class="week-card" onclick="openWeekDetail(${week.id})">
-                <div class="week-date">${formattedDate}</div>
-                <div class="week-progress">
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" style="width: ${week.percentage}%"></div>
+            <div class="week-card-wrapper" data-week-id="${week.id}">
+                <div class="week-delete-bg">
+                    <button class="week-delete-btn" onclick="deleteTrainingWeek(${week.id})">Löschen</button>
+                </div>
+                <div class="week-card" onclick="openWeekDetail(${week.id})">
+                    <div class="week-date">${formattedDate}</div>
+                    <div class="week-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: ${week.percentage}%"></div>
+                        </div>
+                        <div class="progress-text">${week.percentage}%</div>
                     </div>
-                    <div class="progress-text">${week.percentage}%</div>
                 </div>
             </div>
         `;
     }).join('');
+    
+    // Swipe Events hinzufügen
+    addWeekSwipeEvents();
+}
+
+function addWeekSwipeEvents() {
+    document.querySelectorAll('.week-card-wrapper').forEach(wrapper => {
+        const weekCard = wrapper.querySelector('.week-card');
+        
+        let startX = 0;
+        let currentX = 0;
+        let translateX = 0;
+        let isSwiping = false;
+        
+        const handleTouchStart = (e) => {
+            if (e.touches.length !== 1) return;
+            startX = e.touches[0].clientX;
+            currentX = startX;
+            isSwiping = true;
+            weekCard.classList.add('swiping');
+        };
+        
+        const handleTouchMove = (e) => {
+            if (!isSwiping) return;
+            currentX = e.touches[0].clientX;
+            translateX = Math.min(0, currentX - startX);
+            weekCard.style.transform = `translateX(${translateX}px)`;
+        };
+        
+        const handleTouchEnd = () => {
+            if (!isSwiping) return;
+            isSwiping = false;
+            weekCard.classList.remove('swiping');
+            
+            if (translateX < -80) {
+                weekCard.style.transition = 'transform 0.2s ease-out';
+                weekCard.style.transform = 'translateX(-100px)';
+            } else {
+                weekCard.style.transition = 'transform 0.2s ease-out';
+                weekCard.style.transform = 'translateX(0)';
+            }
+        };
+        
+        weekCard.addEventListener('touchstart', handleTouchStart, { passive: true });
+        weekCard.addEventListener('touchmove', handleTouchMove, { passive: true });
+        weekCard.addEventListener('touchend', handleTouchEnd);
+    });
+}
+
+function deleteTrainingWeek(weekId) {
+    trainingWeeks = trainingWeeks.filter(w => w.id !== weekId);
+    saveTrainingWeeks();
+    displayTrainingWeeks();
 }
 
 function openWeekDetail(weekId) {
@@ -189,12 +443,22 @@ function openWeekDetail(weekId) {
         year: 'numeric'
     });
     
-    weekDetailTitle.textContent = `Trainingswoche ${formattedDate}`;
+    // Dropdown Text ändern zu Datum
+    currentViewName.textContent = formattedDate;
     
     // Views wechseln
     nsunsView.classList.remove('active');
     nsunsDetailView.classList.add('active');
     addBtn.style.display = 'none';
+    
+    // Zurück-Button anzeigen
+    backToWeeksBtn.style.display = 'block';
+    
+    // 1RM Inputs setzen und Workouts rendern
+    rmInputA.value = week.oneRepMax || '';
+    rmInputB.value = week.oneRepMax || '';
+    renderWorkout('A');
+    renderWorkout('B');
 }
 
 backToWeeksBtn.addEventListener('click', () => {
@@ -202,6 +466,16 @@ backToWeeksBtn.addEventListener('click', () => {
     nsunsView.classList.add('active');
     addBtn.style.display = 'flex';
     currentWeekId = null;
+    
+    // Zurück-Button verstecken
+    backToWeeksBtn.style.display = 'none';
+    
+    // Dropdown Text zurück zu "Nsuns"
+    currentViewName.textContent = 'Nsuns';
+    
+    // Inputs zurücksetzen
+    rmInputA.value = '';
+    rmInputB.value = '';
 });
 
 // Workout Tabs

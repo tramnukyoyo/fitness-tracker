@@ -8,7 +8,8 @@ let swipedItemId = null;
 let chart = null;
 let selectedImages = [];
 let currentView = 'fortschritt';
-let currentWeekId = null; // Für Detailansicht
+let currentWeekId = null;
+let editingWeightId = null; // Für Edit-Modus
 
 // IndexedDB
 let db = null;
@@ -34,6 +35,10 @@ const backToWeeksBtn = document.getElementById('backToWeeksBtn');
 const workoutTabs = document.querySelectorAll('.workout-tab');
 const workoutAContent = document.getElementById('workoutAContent');
 const workoutBContent = document.getElementById('workoutBContent');
+const rmInputA = document.getElementById('rmInputA');
+const rmInputB = document.getElementById('rmInputB');
+const workoutASets = document.getElementById('workoutASets');
+const workoutBSets = document.getElementById('workoutBSets');
 
 // Fortschritt Elements
 const modal = document.getElementById('modal');
@@ -121,9 +126,43 @@ function switchView(view) {
 // NSUNS - TRAININGSWOCHEN
 // ============================
 
+// Workout A und B Konfiguration
+const WORKOUT_A_CONFIG = [
+    { reps: 8, percentage: 65 },
+    { reps: 6, percentage: 75 },
+    { reps: 4, percentage: 85 },
+    { reps: 4, percentage: 85 },
+    { reps: 4, percentage: 85 },
+    { reps: 5, percentage: 80 },
+    { reps: 6, percentage: 75 },
+    { reps: 7, percentage: 70 },
+    { reps: 8, percentage: 65 }
+];
+
+const WORKOUT_B_CONFIG = [
+    { reps: 5, percentage: 75 },
+    { reps: 3, percentage: 85 },
+    { reps: 1, percentage: 95 },
+    { reps: 3, percentage: 90 },
+    { reps: 5, percentage: 85 },
+    { reps: 3, percentage: 80 },
+    { reps: 5, percentage: 75 },
+    { reps: 3, percentage: 70 },
+    { reps: 5, percentage: 65 }
+];
+
 function createNewTrainingWeek() {
     const today = new Date();
     const dateString = today.toISOString().split('T')[0];
+    
+    // Prüfen ob vorherige Woche komplett (18/18)
+    let initialRM = 0;
+    if (trainingWeeks.length > 0) {
+        const lastWeek = trainingWeeks[trainingWeeks.length - 1];
+        if (lastWeek.completedExercises === 18 && lastWeek.oneRepMax > 0) {
+            initialRM = lastWeek.oneRepMax + 2.5;
+        }
+    }
     
     const newWeek = {
         id: Date.now(),
@@ -131,17 +170,176 @@ function createNewTrainingWeek() {
         completedExercises: 0,
         totalExercises: 18,
         percentage: 0,
+        oneRepMax: initialRM,
         workoutA: {
-            exercises: [] // Später
+            completed: Array(9).fill(false)
         },
         workoutB: {
-            exercises: [] // Später
+            completed: Array(9).fill(false)
         }
     };
     
     trainingWeeks.push(newWeek);
     saveTrainingWeeks();
     displayTrainingWeeks();
+}
+
+function openWeekDetail(weekId) {
+    currentWeekId = weekId;
+    const week = trainingWeeks.find(w => w.id === weekId);
+    
+    if (!week) return;
+    
+    const date = new Date(week.startDate);
+    const formattedDate = date.toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+    });
+    
+    // Dropdown Text ändern zu Datum
+    currentViewName.textContent = formattedDate;
+    
+    // Views wechseln
+    nsunsView.classList.remove('active');
+    nsunsDetailView.classList.add('active');
+    addBtn.style.display = 'none';
+    
+    // Zurück-Button anzeigen
+    backToWeeksBtn.style.display = 'block';
+    
+    // 1RM Inputs setzen und Workouts rendern
+    rmInputA.value = week.oneRepMax || '';
+    rmInputB.value = week.oneRepMax || '';
+    renderWorkout('A');
+    renderWorkout('B');
+}
+
+// 1RM Input Handler
+rmInputA.addEventListener('input', () => {
+    const week = getCurrentWeek();
+    if (!week) return;
+    
+    const value = parseFloat(rmInputA.value) || 0;
+    week.oneRepMax = value;
+    rmInputB.value = value; // Sync
+    saveTrainingWeeks();
+    renderWorkout('A');
+    renderWorkout('B');
+});
+
+rmInputB.addEventListener('input', () => {
+    const week = getCurrentWeek();
+    if (!week) return;
+    
+    const value = parseFloat(rmInputB.value) || 0;
+    week.oneRepMax = value;
+    rmInputA.value = value; // Sync
+    saveTrainingWeeks();
+    renderWorkout('A');
+    renderWorkout('B');
+});
+
+function getCurrentWeek() {
+    return trainingWeeks.find(w => w.id === currentWeekId);
+}
+
+// ============================
+// GEWICHTSBERECHNUNG
+// ============================
+
+function calculateWorkingWeight(oneRM, percentage) {
+    if (!oneRM || oneRM <= 0) return 0;
+    
+    const rawWeight = (oneRM * percentage) / 100;
+    
+    // Auf nächstes darstellbares Gewicht runden (2.5kg Schritte)
+    // Minimum: 20kg (nur Stange)
+    const rounded = Math.round(rawWeight / 2.5) * 2.5;
+    
+    return Math.max(20, rounded);
+}
+
+function calculatePlates(weight) {
+    if (weight < 20) return "Nicht möglich";
+    
+    const plateWeight = (weight - 20) / 2; // Pro Seite
+    
+    if (plateWeight === 0) return "Nur Stange";
+    
+    const plates = [20, 15, 10, 5, 2.5, 1.25];
+    let remaining = plateWeight;
+    let combination = [];
+    
+    for (const plate of plates) {
+        const count = Math.floor(remaining / plate);
+        if (count > 0) {
+            combination.push(`${count}×${plate}kg`);
+            remaining -= count * plate;
+        }
+    }
+    
+    if (Math.abs(remaining) > 0.01) {
+        return "Fehler bei Berechnung";
+    }
+    
+    return `[2×${combination.join(' + 2×')}]`;
+}
+
+// ============================
+// WORKOUT RENDERING
+// ============================
+
+function renderWorkout(workout) {
+    const week = getCurrentWeek();
+    if (!week) return;
+    
+    const config = workout === 'A' ? WORKOUT_A_CONFIG : WORKOUT_B_CONFIG;
+    const container = workout === 'A' ? workoutASets : workoutBSets;
+    const completed = workout === 'A' ? week.workoutA.completed : week.workoutB.completed;
+    
+    container.innerHTML = config.map((set, index) => {
+        const weight = calculateWorkingWeight(week.oneRepMax, set.percentage);
+        const plates = calculatePlates(weight);
+        const isCompleted = completed[index];
+        
+        return `
+            <div class="set-card ${isCompleted ? 'completed' : ''}" 
+                 onclick="toggleSet('${workout}', ${index})">
+                <div class="set-main-info">
+                    <div class="set-text">
+                        Satz ${index + 1}: ${set.reps} Wiederholungen mit ${weight}kg
+                    </div>
+                    <div class="set-checkmark">✓</div>
+                </div>
+                <div class="set-details">
+                    <span class="set-plates">${plates}</span>
+                    <span class="set-percentage">${set.percentage}% 1RM</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleSet(workout, setIndex) {
+    const week = getCurrentWeek();
+    if (!week) return;
+    
+    const completedArray = workout === 'A' ? week.workoutA.completed : week.workoutB.completed;
+    
+    // Toggle
+    completedArray[setIndex] = !completedArray[setIndex];
+    
+    // Zähle abgeschlossene Übungen
+    const totalCompleted = week.workoutA.completed.filter(c => c).length + 
+                          week.workoutB.completed.filter(c => c).length;
+    
+    week.completedExercises = totalCompleted;
+    week.percentage = Math.round((totalCompleted / 18) * 100);
+    
+    saveTrainingWeeks();
+    renderWorkout(workout);
+    displayTrainingWeeks(); // Update Prozent in Liste
 }
 
 function displayTrainingWeeks() {
@@ -242,12 +440,15 @@ function openWeekDetail(weekId) {
     const date = new Date(week.startDate);
     const formattedDate = date.toLocaleDateString('de-DE', {
         day: '2-digit',
-        month: 'long',
-        year: 'numeric'
+        month: '2-digit',
+        year: '2-digit'
     });
     
     // Dropdown Text ändern zu Datum
     currentViewName.textContent = formattedDate;
+    
+    // Dropdown-Menü neu aufbauen mit Trainingswochen
+    updateWeekDropdown();
     
     // Views wechseln
     nsunsView.classList.remove('active');
@@ -256,6 +457,53 @@ function openWeekDetail(weekId) {
     
     // Zurück-Button anzeigen
     backToWeeksBtn.style.display = 'block';
+    
+    // 1RM Inputs setzen und Workouts rendern
+    rmInputA.value = week.oneRepMax || '';
+    rmInputB.value = week.oneRepMax || '';
+    renderWorkout('A');
+    renderWorkout('B');
+}
+
+function updateWeekDropdown() {
+    // Nur Trainingswochen anzeigen, sortiert nach Datum
+    const sortedWeeks = [...trainingWeeks].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+    
+    if (sortedWeeks.length <= 1) {
+        // Bei nur 1 Woche: Dropdown-Pfeil verstecken
+        document.querySelector('.dropdown-arrow').style.display = 'none';
+        viewDropdownBtn.style.cursor = 'default';
+        viewDropdownBtn.onclick = null;
+        return;
+    }
+    
+    // Dropdown-Pfeil anzeigen
+    document.querySelector('.dropdown-arrow').style.display = 'inline';
+    viewDropdownBtn.style.cursor = 'pointer';
+    
+    // Menü neu aufbauen
+    viewDropdownMenu.innerHTML = sortedWeeks.map(week => {
+        const date = new Date(week.startDate);
+        const formattedDate = date.toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit'
+        });
+        
+        const isActive = week.id === currentWeekId ? 'active' : '';
+        
+        return `<div class="dropdown-item ${isActive}" data-week-id="${week.id}">${formattedDate}</div>`;
+    }).join('');
+    
+    // Event Listeners für Wochen-Wechsel
+    viewDropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const weekId = parseInt(item.dataset.weekId);
+            openWeekDetail(weekId);
+            viewDropdownMenu.classList.remove('show');
+            viewDropdownBtn.classList.remove('open');
+        });
+    });
 }
 
 backToWeeksBtn.addEventListener('click', () => {
@@ -267,8 +515,38 @@ backToWeeksBtn.addEventListener('click', () => {
     // Zurück-Button verstecken
     backToWeeksBtn.style.display = 'none';
     
-    // Dropdown Text zurück zu "Nsuns"
+    // Dropdown zurück zu original (Fortschritt/Nsuns)
     currentViewName.textContent = 'Nsuns';
+    document.querySelector('.dropdown-arrow').style.display = 'inline';
+    viewDropdownBtn.style.cursor = 'pointer';
+    
+    // Original Dropdown wiederherstellen
+    viewDropdownMenu.innerHTML = `
+        <div class="dropdown-item" data-view="fortschritt">Fortschritt</div>
+        <div class="dropdown-item active" data-view="nsuns">Nsuns</div>
+    `;
+    
+    // Original Event Listeners
+    dropdownItems.forEach(item => {
+        const newItem = viewDropdownMenu.querySelector(`[data-view="${item.dataset.view}"]`);
+        if (newItem) {
+            newItem.addEventListener('click', () => {
+                const view = newItem.dataset.view;
+                switchView(view);
+                
+                viewDropdownMenu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+                newItem.classList.add('active');
+                currentViewName.textContent = newItem.textContent;
+                
+                viewDropdownMenu.classList.remove('show');
+                viewDropdownBtn.classList.remove('open');
+            });
+        }
+    });
+    
+    // Inputs zurücksetzen
+    rmInputA.value = '';
+    rmInputB.value = '';
 });
 
 // Workout Tabs
@@ -504,7 +782,7 @@ function updateImagePreview() {
     imagePreview.innerHTML = selectedImages.map((img, index) => `
         <div class="preview-thumbnail">
             <img src="${img.thumbnail}" alt="Vorschau">
-            <button class="remove-image-btn" onclick="removeSelectedImage(${index})">×</button>
+            <button class="remove-image-btn" onclick="event.stopPropagation(); removeSelectedImage(${index})">×</button>
         </div>
     `).join('');
 }
@@ -529,47 +807,102 @@ async function saveWeight() {
     }
     
     const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const entryId = Date.now();
     
-    let imageIds = [];
-    
-    if (selectedImages.length > 0) {
-        try {
+    if (editingWeightId) {
+        // EDIT-MODUS: Bestehendes Gewicht aktualisieren
+        const entry = weights.find(w => w.id === editingWeightId);
+        if (!entry) return;
+        
+        // Alte Bilder löschen die entfernt wurden
+        const existingImages = selectedImages.filter(img => img.isExisting);
+        const removedImages = (await loadImagesForEntry(editingWeightId))
+            .filter(oldImg => !existingImages.find(newImg => newImg.id === oldImg.id));
+        
+        for (const img of removedImages) {
+            await deleteImageFromDB(img.id);
+        }
+        
+        // Neue Bilder speichern
+        const newImages = selectedImages.filter(img => !img.isExisting);
+        let imageCount = existingImages.length;
+        
+        if (newImages.length > 0) {
             if (!db) await initIndexedDB();
             
-            for (let i = 0; i < selectedImages.length; i++) {
-                const imageId = await saveImageToDB(entryId, i, selectedImages[i].data);
-                if (imageId) {
-                    imageIds.push({
-                        id: imageId,
-                        thumbnail: selectedImages[i].thumbnail
-                    });
-                }
+            for (let i = 0; i < newImages.length; i++) {
+                const imageIndex = imageCount + i;
+                await saveImageToDB(editingWeightId, imageIndex, newImages[i].data);
             }
-        } catch (error) {
-            console.error('Fehler beim Speichern der Bilder:', error);
-            alert('Fehler beim Speichern der Bilder.');
-            return;
+            imageCount += newImages.length;
         }
+        
+        // Entry aktualisieren
+        entry.weight = weight;
+        entry.date = dateString;
+        entry.hasImages = imageCount > 0;
+        entry.imageCount = imageCount;
+        
+    } else {
+        // NEU-MODUS: Neues Gewicht erstellen
+        const entryId = Date.now();
+        
+        let imageIds = [];
+        
+        if (selectedImages.length > 0) {
+            try {
+                if (!db) await initIndexedDB();
+                
+                for (let i = 0; i < selectedImages.length; i++) {
+                    const imageId = await saveImageToDB(entryId, i, selectedImages[i].data);
+                    if (imageId) {
+                        imageIds.push({
+                            id: imageId,
+                            thumbnail: selectedImages[i].thumbnail
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Fehler beim Speichern der Bilder:', error);
+                alert('Fehler beim Speichern der Bilder.');
+                return;
+            }
+        }
+        
+        const entry = {
+            id: entryId,
+            weight: weight,
+            date: dateString,
+            hasImages: imageIds.length > 0,
+            imageCount: imageIds.length
+        };
+        
+        weights.push(entry);
     }
     
-    const entry = {
-        id: entryId,
-        weight: weight,
-        date: dateString,
-        hasImages: imageIds.length > 0,
-        imageCount: imageIds.length
-    };
-    
-    weights.push(entry);
     weights.sort((a, b) => new Date(a.date) - new Date(b.date));
-    
     localStorage.setItem('weights', JSON.stringify(weights));
     
     displayWeights();
     updateChart();
     updateStats();
     closeModal();
+}
+
+async function deleteImageFromDB(imageId) {
+    return new Promise((resolve) => {
+        if (!db) {
+            resolve();
+            return;
+        }
+        
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        
+        const request = store.delete(imageId);
+        
+        request.onsuccess = () => resolve();
+        request.onerror = () => resolve();
+    });
 }
 
 async function deleteWeight(id) {
@@ -633,7 +966,7 @@ async function displayWeights() {
                 <div class="delete-bg">
                     <button class="delete-btn" onclick="deleteWeight(${w.id})">Löschen</button>
                 </div>
-                <div class="weight-entry">
+                <div class="weight-entry" onclick="openEditModal(${w.id})">
                     <div>
                         <div class="weight-info">
                             <div class="weight">
@@ -661,12 +994,14 @@ function addSwipeEvents() {
         let currentX = 0;
         let translateX = 0;
         let isSwiping = false;
+        let swipeStartTime = 0;
 
         const handleTouchStart = (e) => {
             if (e.touches.length !== 1) return;
             startX = e.touches[0].clientX;
             currentX = startX;
             isSwiping = true;
+            swipeStartTime = Date.now();
             entryDiv.style.transition = 'none';
         };
 
@@ -674,13 +1009,29 @@ function addSwipeEvents() {
             if (!isSwiping) return;
             currentX = e.touches[0].clientX;
             translateX = Math.min(0, currentX - startX);
-            entryDiv.style.transform = `translateX(${translateX}px)`;
+            
+            // Nur nach links erlauben
+            if (translateX < 0) {
+                entryDiv.style.transform = `translateX(${translateX}px)`;
+            }
         };
 
-        const handleTouchEnd = () => {
+        const handleTouchEnd = (e) => {
             if (!isSwiping) return;
             isSwiping = false;
+            
+            const swipeDuration = Date.now() - swipeStartTime;
+            const swipeDistance = Math.abs(translateX);
 
+            // Wenn Swipe minimal war und schnell → Klick (Edit öffnen)
+            if (swipeDistance < 10 && swipeDuration < 300) {
+                entryDiv.style.transition = 'transform 0.2s ease-out';
+                entryDiv.style.transform = 'translateX(0)';
+                // Klick wird vom onclick auf entryDiv behandelt
+                return;
+            }
+
+            // Swipe Logic
             if (translateX < -80) {
                 entryDiv.style.transition = 'transform 0.2s ease-out';
                 entryDiv.style.transform = 'translateX(-100px)';
@@ -690,8 +1041,8 @@ function addSwipeEvents() {
             }
         };
 
-        entryDiv.addEventListener('touchstart', handleTouchStart);
-        entryDiv.addEventListener('touchmove', handleTouchMove);
+        entryDiv.addEventListener('touchstart', handleTouchStart, { passive: true });
+        entryDiv.addEventListener('touchmove', handleTouchMove, { passive: true });
         entryDiv.addEventListener('touchend', handleTouchEnd);
     });
 }
@@ -734,6 +1085,43 @@ function openModal() {
     weightInput.focus();
     selectedImages = [];
     updateImagePreview();
+    
+    // Modal-Titel ändern je nach Modus
+    const modalTitle = document.querySelector('.modal-header h2');
+    modalTitle.textContent = editingWeightId ? 'Gewicht bearbeiten' : 'Gewicht hinzufügen';
+}
+
+function openEditModal(weightId) {
+    editingWeightId = weightId;
+    const entry = weights.find(w => w.id === weightId);
+    
+    if (!entry) return;
+    
+    // Datum setzen
+    const date = new Date(entry.date);
+    dayPicker.value = date.getDate();
+    monthPicker.value = date.getMonth() + 1;
+    yearPicker.value = date.getFullYear();
+    
+    // Gewicht setzen
+    weightInput.value = entry.weight;
+    
+    // Bilder laden
+    loadImagesForEntry(entry.id).then(images => {
+        selectedImages = images.map(img => ({
+            id: img.id,
+            data: img.data,
+            thumbnail: img.thumbnail,
+            isExisting: true // Markieren als existierend
+        }));
+        updateImagePreview();
+    });
+    
+    modal.classList.add('show');
+    
+    // Modal-Titel ändern
+    const modalTitle = document.querySelector('.modal-header h2');
+    modalTitle.textContent = 'Gewicht bearbeiten';
 }
 
 function closeModal() {
@@ -741,6 +1129,11 @@ function closeModal() {
     selectedImages = [];
     imagePreview.innerHTML = '';
     imageUpload.value = '';
+    editingWeightId = null;
+    
+    // Modal-Titel zurücksetzen
+    const modalTitle = document.querySelector('.modal-header h2');
+    modalTitle.textContent = 'Gewicht hinzufügen';
 }
 
 function initializeDatePickers() {
