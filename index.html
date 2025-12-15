@@ -13,7 +13,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header mit Dropdown -->
+        <!-- Header -->
         <header>
             <!-- Zurück-Button (nur in Nsuns Detail sichtbar) -->
             <button id="backToWeeksBtn" class="back-btn-header" style="display: none;">
@@ -21,20 +21,30 @@
             </button>
 
             <div class="header-title-wrapper">
-                <button id="viewDropdownBtn" class="view-dropdown-btn">
-                    <span id="currentViewName">Fortschritt</span>
-                    <span class="dropdown-arrow">▼</span>
-                </button>
-                <div id="viewDropdownMenu" class="view-dropdown-menu">
-                    <div class="dropdown-item active" data-view="fortschritt">Fortschritt</div>
-                    <div class="dropdown-item" data-view="nsuns">Nsuns</div>
-                </div>
+                <span id="currentViewName" class="header-title">Home</span>
             </div>
-            <button id="addBtn" class="add-btn">+</button>
+            <button id="addBtn" class="add-btn" style="display: none;">+</button>
         </header>
 
+        <!-- HOME VIEW -->
+        <div id="homeView" class="view-content active">
+            <section class="dashboard-section">
+                <h2>Willkommen zurück!</h2>
+                <div class="dashboard-summary">
+                    <div class="summary-card" data-nav="nsuns">
+                        <h3>Letztes Workout</h3>
+                        <p id="lastWorkoutSummary">Keine Daten</p>
+                    </div>
+                    <div class="summary-card" data-nav="fortschritt">
+                        <h3>Aktuelles Gewicht</h3>
+                        <p id="currentWeightSummary">- kg</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
         <!-- FORTSCHRITT VIEW -->
-        <div id="fortschrittView" class="view-content active">
+        <div id="fortschrittView" class="view-content">
             <!-- Graph Section -->
             <section class="graph-section">
                 <!-- Statistik -->
@@ -81,10 +91,6 @@
                     <p class="empty-state">Noch keine Einträge vorhanden</p>
                 </div>
             </section>
-
-            <!-- Settings/Backup Section -->
-            <section id="settingsSection" class="settings-section">
-            </section>
         </div>
 
         <!-- NSUNS VIEW - ÜBERSICHT -->
@@ -122,7 +128,65 @@
             <div id="workoutDContent" class="workout-content">
             </div>
         </div>
+
+        <!-- NUTRITION VIEW -->
+        <div id="nutritionView" class="view-content">
+            <section class="placeholder-section">
+                <div class="placeholder-icon">🍎</div>
+                <h2>Ernährung</h2>
+                <p>Dieses Feature kommt bald!</p>
+            </section>
+        </div>
+
+        <!-- SETTINGS VIEW -->
+        <div id="settingsView" class="view-content">
+            <section id="settingsSection" class="settings-section">
+                <!-- Backup UI will be injected here -->
+            </section>
+            
+            <section class="about-section">
+                <h3>Über die App</h3>
+                <p>Version 1.2.0 (PWA)</p>
+                <p>Fitness Tracker mit nSuns 5/3/1 LP</p>
+            </section>
+        </div>
     </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active" data-target="home">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+            <span class="nav-label">Home</span>
+        </a>
+        <a href="#" class="nav-item" data-target="fortschritt">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+            </svg>
+            <span class="nav-label">Progress</span>
+        </a>
+        <a href="#" class="nav-item" data-target="nsuns">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22 14.86 20.57 16.29 22 18.43 19.86 19.86 21.29 21.29 19.86l-1.43-1.43 1.43-1.43L20.57 16.29 22 14.86z"/>
+            </svg>
+            <span class="nav-label">Workouts</span>
+        </a>
+        <a href="#" class="nav-item" data-target="nutrition">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C7.03 2 3 6.03 3 11c0 4.97 4.03 9 9 9s9-4.03 9-9c0-4.97-4.03-9-9-9zm-5 9c0-2.76 2.24-5 5-5s5 2.24 5 5-2.24 5-5 5-5-2.24-5-5zm5 7c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                <path d="M0 0h24v24H0z" fill="none"/>
+                <circle cx="12" cy="11" r="3"/>
+            </svg>
+            <span class="nav-label">Nutrition</span>
+        </a>
+        <a href="#" class="nav-item" data-target="settings">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L3.16 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.04.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.08-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            <span class="nav-label">Settings</span>
+        </a>
+    </nav>
 
     <!-- Modal für Gewicht hinzufügen -->
     <div id="modal" class="modal">
@@ -208,6 +272,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script type="module" src="js/app.js"></script>
 </body>
 </html>

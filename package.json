@@ -1,0 +1,24 @@
+{
+  "name": "fitness-tracker",
+  "version": "1.0.0",
+  "description": "Meine eigene Fitness App\r <! DOCTYPE html>\r <html lang=\"de\">\r <head>\r     <meta charset=\"UTF-8\">\r     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r     <meta name=\"apple-mobile-web-app-capable\" content=\"yes\">\r     <meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\">\r     <title>Fitness Tracker</title>\r     <link rel=\"stylesheet\" href=\"style.css\">\r </head>\r <body>\r     <div class=\"container\">\r         <!-- Header -->\r         <header>\r             <h1>Fortschritt</h1>\r             <button id=\"addBtn\" class=\"add-btn\">+</button>\r         </header>",
+  "main": "app_backup.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tramnukyoyo/fitness-tracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/tramnukyoyo/fitness-tracker/issues"
+  },
+  "homepage": "https://github.com/tramnukyoyo/fitness-tracker#readme",
+  "dependencies": {
+    "html5-qrcode": "^2.3.8"
+  }
+}

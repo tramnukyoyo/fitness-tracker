@@ -17,22 +17,25 @@ import {
     toggleSetCompletion,
     updateSetData,
     saveTrainingWeeks,
-    calculateNewTMs
+    calculateNewTMs,
+    CONSTANTS
 } from './nsuns.js';
 import { createBackupUI } from './backup.js';
+import { initNutrition } from './nutrition.js';
 import { initEasterEgg } from './easter-egg.js';
 
 // ============================
 // DOM ELEMENTS
 // ============================
-// View Switching
-const viewDropdownBtn = document.getElementById('viewDropdownBtn');
-const viewDropdownMenu = document.getElementById('viewDropdownMenu');
+// Navigation
 const currentViewName = document.getElementById('currentViewName');
-const dropdownItems = document.querySelectorAll('.dropdown-item');
+const navItems = document.querySelectorAll('.nav-item');
+const homeView = document.getElementById('homeView');
 const fortschrittView = document.getElementById('fortschrittView');
 const nsunsView = document.getElementById('nsunsView');
 const nsunsDetailView = document.getElementById('nsunsDetailView');
+const nutritionView = document.getElementById('nutritionView');
+const settingsView = document.getElementById('settingsView');
 
 // Nsuns Elements
 const weeksList = document.getElementById('weeksList');
@@ -59,6 +62,10 @@ const statsDisplay = document.getElementById('statsDisplay');
 const emptyState = document.getElementById('emptyState');
 const weightChartCanvas = document.getElementById('weightChart');
 
+// Dashboard Elements
+const lastWorkoutSummary = document.getElementById('lastWorkoutSummary');
+const currentWeightSummary = document.getElementById('currentWeightSummary');
+
 // Bilder
 const imageUpload = document.getElementById('imageUpload');
 const cameraBtn = document.getElementById('cameraBtn');
@@ -66,7 +73,7 @@ const galleryBtn = document.getElementById('galleryBtn');
 const imagePreview = document.getElementById('imagePreview');
 
 // Current state
-let currentView = 'fortschritt';
+let currentView = 'home';
 let currentWorkout = 'a';
 
 // ============================
@@ -78,6 +85,12 @@ async function init() {
 
     await refreshFortschrittView();
     refreshNsunsView();
+    updateDashboard();
+
+    // Init Nutrition
+    if (nutritionView) {
+        initNutrition(nutritionView);
+    }
 
     // Setup backup UI
     const settingsContainer = document.getElementById('settingsSection');
@@ -85,7 +98,7 @@ async function init() {
         createBackupUI(settingsContainer);
     }
 
-    switchView('fortschritt');
+    switchView('home');
 
     // Initialize easter egg
     initEasterEgg();
@@ -102,53 +115,89 @@ async function init() {
 }
 
 // ============================
-// VIEW SWITCHING
+// NAVIGATION & VIEW SWITCHING
 // ============================
-viewDropdownBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    viewDropdownMenu.classList.toggle('show');
-    viewDropdownBtn.classList.toggle('open');
+navItems.forEach(item => {
+    item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetView = item.dataset.target;
+        switchView(targetView);
+    });
 });
 
-document.addEventListener('click', (e) => {
-    if (!viewDropdownBtn.contains(e.target) && !viewDropdownMenu.contains(e.target)) {
-        viewDropdownMenu.classList.remove('show');
-        viewDropdownBtn.classList.remove('open');
-    }
-});
-
-dropdownItems.forEach(item => {
-    item.addEventListener('click', () => {
-        const view = item.dataset.view;
-        switchView(view);
-
-        dropdownItems.forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        currentViewName.textContent = item.textContent;
-
-        viewDropdownMenu.classList.remove('show');
-        viewDropdownBtn.classList.remove('open');
+// Summary Cards Navigation
+document.querySelectorAll('.summary-card').forEach(card => {
+    card.addEventListener('click', () => {
+        const target = card.dataset.nav;
+        if (target) switchView(target);
     });
 });
 
 function switchView(view) {
     currentView = view;
-
-    fortschrittView.classList.remove('active');
-    nsunsView.classList.remove('active');
-    nsunsDetailView.classList.remove('active');
+    
+    // Reset Views
+    [homeView, fortschrittView, nsunsView, nsunsDetailView, nutritionView, settingsView].forEach(v => {
+        if(v) v.classList.remove('active');
+    });
     backToWeeksBtn.style.display = 'none';
 
+    // Set Active View
+    const viewMap = {
+        'home': homeView,
+        'fortschritt': fortschrittView,
+        'nsuns': nsunsView,
+        'nutrition': nutritionView,
+        'settings': settingsView
+    };
+    if (viewMap[view]) viewMap[view].classList.add('active');
+
+    // Update Bottom Nav State
+    navItems.forEach(item => {
+        item.classList.toggle('active', item.dataset.target === view);
+    });
+
+    // Update Header Title & Action Button
+    const titles = {
+        'home': 'Home',
+        'fortschritt': 'Progress',
+        'nsuns': 'Workouts',
+        'nutrition': 'Nutrition',
+        'settings': 'Settings'
+    };
+    currentViewName.textContent = titles[view] || 'Fitness Tracker';
+
+    // Add Button Logic
     if (view === 'fortschritt') {
-        fortschrittView.classList.add('active');
         addBtn.style.display = 'flex';
         addBtn.onclick = openModal;
     } else if (view === 'nsuns') {
-        nsunsView.classList.add('active');
         addBtn.style.display = 'flex';
         addBtn.onclick = openTMModal;
-    } else if (view === 'settings') {
-        // Settings view if we add one
+    } else {
+        addBtn.style.display = 'none';
+    }
+
+    if (view === 'home') updateDashboard();
+}
+
+function updateDashboard() {
+    // Update Last Workout
+    const weeks = getTrainingWeeks();
+    if (weeks && weeks.length > 0) {
+        const lastWeek = weeks[weeks.length - 1];
+        const date = new Date(lastWeek.startDate);
+        lastWorkoutSummary.textContent = `Woche ${weeks.length} • ${date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`;
+    } else {
+        lastWorkoutSummary.textContent = "Start your journey!";
+    }
+
+    // Update Current Weight
+    const currentWeightElement = document.getElementById('currentWeight');
+    if (currentWeightElement && currentWeightElement.textContent !== '-') {
+        currentWeightSummary.textContent = currentWeightElement.textContent;
+    } else {
+        currentWeightSummary.textContent = "- kg";
     }
 }
 
@@ -164,12 +213,7 @@ function openTMModal() {
         if (lastWeek) {
             proposedTMs = calculateNewTMs(lastWeek);
         } else {
-            proposedTMs = {
-                bench: 60,
-                squat: 80,
-                ohp: 40,
-                deadlift: 100
-            };
+            proposedTMs = { ...CONSTANTS.DEFAULT_TMS };
         }
 
         document.getElementById('tmBench').value = proposedTMs.bench;
@@ -182,6 +226,7 @@ function openTMModal() {
         // Fallback: create week with defaults
         createNewTrainingWeek();
         refreshNsunsView();
+        updateDashboard();
     }
 }
 
@@ -193,6 +238,7 @@ function closeTMModal() {
 
 function refreshNsunsView() {
     displayTrainingWeeks(weeksList, openWeekDetail);
+    updateDashboard();
 }
 
 function openWeekDetail(weekId) {
@@ -210,8 +256,10 @@ function openWeekDetail(weekId) {
 
     currentViewName.textContent = formattedDate;
 
-    nsunsView.classList.remove('active');
+    // Manual navigation to detail view
+    [homeView, fortschrittView, nsunsView, nutritionView, settingsView].forEach(v => v.classList.remove('active'));
     nsunsDetailView.classList.add('active');
+    
     addBtn.style.display = 'none';
     backToWeeksBtn.style.display = 'block';
 
@@ -258,13 +306,8 @@ function renderCurrentWorkout() {
 }
 
 backToWeeksBtn.addEventListener('click', () => {
-    nsunsDetailView.classList.remove('active');
-    nsunsView.classList.add('active');
-    addBtn.style.display = 'flex';
-    setCurrentWeekId(null);
-    backToWeeksBtn.style.display = 'none';
-    currentViewName.textContent = 'Nsuns';
-    refreshNsunsView();
+    // Go back to Nsuns list view
+    switchView('nsuns');
 });
 
 // Workout Tabs
@@ -290,10 +333,10 @@ if (tmModal) {
 
     if (tmSaveBtn) {
         tmSaveBtn.addEventListener('click', () => {
-            const bench = parseFloat(document.getElementById('tmBench')?.value) || 60;
-            const squat = parseFloat(document.getElementById('tmSquat')?.value) || 80;
-            const ohp = parseFloat(document.getElementById('tmOHP')?.value) || 40;
-            const deadlift = parseFloat(document.getElementById('tmDeadlift')?.value) || 100;
+            const bench = parseFloat(document.getElementById('tmBench')?.value) || CONSTANTS.DEFAULT_TMS.bench;
+            const squat = parseFloat(document.getElementById('tmSquat')?.value) || CONSTANTS.DEFAULT_TMS.squat;
+            const ohp = parseFloat(document.getElementById('tmOHP')?.value) || CONSTANTS.DEFAULT_TMS.ohp;
+            const deadlift = parseFloat(document.getElementById('tmDeadlift')?.value) || CONSTANTS.DEFAULT_TMS.deadlift;
 
             createNewTrainingWeek({ bench, squat, ohp, deadlift });
             refreshNsunsView();
@@ -313,6 +356,7 @@ async function refreshFortschrittView() {
     await displayWeights(weightHistory, null);
     updateChart(weightChartCanvas, emptyState);
     updateStats(statsDisplay, document.getElementById('diffLabel'));
+    updateDashboard();
 }
 
 cancelBtn.addEventListener('click', closeModal);
