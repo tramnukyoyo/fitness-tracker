@@ -16,7 +16,8 @@ import {
     renderWorkoutDetail,
     toggleSetCompletion,
     updateSetData,
-    saveTrainingWeeks
+    saveTrainingWeeks,
+    calculateNewTMs
 } from './nsuns.js';
 import { createBackupUI } from './backup.js';
 import { initEasterEgg } from './easter-egg.js';
@@ -156,6 +157,26 @@ function switchView(view) {
 // ============================
 function openTMModal() {
     if (tmModal) {
+        const trainingWeeks = getTrainingWeeks();
+        const lastWeek = trainingWeeks.length > 0 ? trainingWeeks[trainingWeeks.length - 1] : null;
+
+        let proposedTMs;
+        if (lastWeek) {
+            proposedTMs = calculateNewTMs(lastWeek);
+        } else {
+            proposedTMs = {
+                bench: 60,
+                squat: 80,
+                ohp: 40,
+                deadlift: 100
+            };
+        }
+
+        document.getElementById('tmBench').value = proposedTMs.bench;
+        document.getElementById('tmSquat').value = proposedTMs.squat;
+        document.getElementById('tmOHP').value = proposedTMs.ohp;
+        document.getElementById('tmDeadlift').value = proposedTMs.deadlift;
+
         tmModal.classList.add('show');
     } else {
         // Fallback: create week with defaults

@@ -8,12 +8,12 @@ let currentWeekId = null;
 // N-Suns 5/3/1 LP Program Structure
 const NSUNS_PROGRAMS = {
     workoutA: {
-        name: 'Workout A - Bench / OHP',
+        name: 'Workout A - Bench Volume',
         mainLift: 'Bench Press',
         secondaryLift: 'Overhead Press',
         exercises: [
             // Main Lift - Bench Press (T1)
-            { name: 'Bench Press', sets: 9, type: 'main', reps: [5, 3, 1, 3, 3, 3, 5, 5, '5+'], percentages: [75, 85, 95, 90, 85, 80, 75, 70, 65] },
+            { name: 'Bench Press', sets: 9, type: 'main', reps: [8, 6, 4, 4, 4, 5, 6, 7, '8+'], percentages: [65, 75, 85, 85, 85, 80, 75, 70, 65] },
             // Secondary Lift - OHP (T2)
             { name: 'Overhead Press', sets: 8, type: 'secondary', reps: [6, 5, 3, 5, 7, 4, 6, 8], percentages: [50, 60, 70, 70, 70, 70, 65, 60] },
             // Accessories
@@ -38,14 +38,14 @@ const NSUNS_PROGRAMS = {
         ]
     },
     workoutC: {
-        name: 'Workout C - OHP / Incline',
-        mainLift: 'Overhead Press',
-        secondaryLift: 'Incline Bench',
+        name: 'Workout C - Bench Heavy',
+        mainLift: 'Bench Press',
+        secondaryLift: 'Overhead Press',
         exercises: [
-            // Main Lift - OHP (T1)
-            { name: 'Overhead Press', sets: 9, type: 'main', reps: [5, 3, 1, 3, 3, 3, 5, 5, '5+'], percentages: [75, 85, 95, 90, 85, 80, 75, 70, 65] },
-            // Secondary Lift - Incline Bench (T2)
-            { name: 'Incline Bench', sets: 8, type: 'secondary', reps: [6, 5, 3, 5, 7, 4, 6, 8], percentages: [50, 60, 70, 70, 70, 70, 65, 60] },
+            // Main Lift - Bench Press (T1)
+            { name: 'Bench Press', sets: 9, type: 'main', reps: [5, 3, '1+', 3, 5, 3, 5, 3, '5+'], percentages: [75, 85, 95, 90, 85, 80, 75, 70, 65] },
+            // Secondary Lift - Overhead Press (T2)
+            { name: 'Overhead Press', sets: 8, type: 'secondary', reps: [6, 5, 3, 5, 7, 4, 6, 8], percentages: [50, 60, 70, 70, 70, 70, 65, 60] },
             // Accessories
             { name: 'Accessory 1', sets: 4, type: 'accessory', reps: ['8-12', '8-12', '8-12', '8-12'], percentages: null },
             { name: 'Accessory 2', sets: 4, type: 'accessory', reps: ['8-12', '8-12', '8-12', '8-12'], percentages: null },
@@ -86,14 +86,24 @@ export function createNewTrainingWeek(trainingMaxes = null) {
     const dateString = today.toISOString().split('T')[0];
 
     // Default training maxes if not provided
-    const defaultTMs = {
-        bench: 60,
-        squat: 80,
-        ohp: 40,
-        deadlift: 100
-    };
+    let tms;
 
-    const tms = trainingMaxes || defaultTMs;
+    if (trainingMaxes) {
+        tms = trainingMaxes;
+    } else {
+        // Try to calculate from last week
+        const lastWeek = trainingWeeks.length > 0 ? trainingWeeks[trainingWeeks.length - 1] : null;
+        if (lastWeek) {
+            tms = calculateNewTMs(lastWeek);
+        } else {
+            tms = {
+                bench: 60,
+                squat: 80,
+                ohp: 40,
+                deadlift: 100
+            };
+        }
+    }
 
     const newWeek = {
         id: Date.now(),
@@ -113,6 +123,76 @@ export function createNewTrainingWeek(trainingMaxes = null) {
     trainingWeeks.push(newWeek);
     saveTrainingWeeks();
     return newWeek;
+}
+
+export function calculateNewTMs(lastWeek) {
+    // Clone previous TMs
+    const newTMs = { ...lastWeek.trainingMaxes };
+
+    // Track if OHP has been incremented to avoid double progression
+    let ohpIncremented = false;
+
+    // Iterate through workouts to find 1+ sets and update corresponding TMs
+    Object.values(lastWeek.workouts).forEach(workout => {
+        // 1. T1 LOGIC (Main Lifts: Bench, Squat, Deadlift)
+        const mainLift = workout.exercises[0];
+        if (mainLift) {
+            // Find the 1+ set (Handle both '1+' string and 1 number for Squat/DL)
+            const amrapSet = mainLift.sets.find(s => s.targetReps === '1+' || s.targetReps === 1);
+            
+            if (amrapSet) {
+                // Get actual reps and weight
+                let reps = amrapSet.actualReps;
+                let weight = amrapSet.actualWeight;
+                const targetWeight = amrapSet.targetWeight || 0;
+
+                let increase = 0;
+
+                // Logic 1: Implicit Success (Checked but no manual input)
+                if ((reps === null || reps === undefined || reps === '') && amrapSet.completed) {
+                    increase = 2.5;
+                } 
+                // Logic 2: Manual Input Calculation
+                else if (reps !== null && reps !== undefined) {
+                     if (weight === null || weight === undefined) weight = targetWeight;
+
+                    const currentE1RM = weight * (1 + reps / 30);
+                    const targetE1RM = targetWeight * (1 + 1 / 30);
+
+                    if (targetE1RM > 0) {
+                        const performanceRatio = currentE1RM / targetE1RM;
+                        
+                        if (performanceRatio >= 1.15) increase = 7.5;
+                        else if (performanceRatio >= 1.09) increase = 5;
+                        else if (performanceRatio >= 1.03) increase = 2.5;
+                        else if (performanceRatio < 0.90) increase = -2.5;
+                    }
+                }
+
+                // Identify which TM to update based on exercise name
+                const tmKey = getTMKey(mainLift.name);
+                if (tmKey && increase !== 0) {
+                    newTMs[tmKey] += increase;
+                }
+            }
+        }
+
+        // 2. T2 LOGIC (Specifically for OHP in this 4-day template)
+        // Since OHP is never a T1 with a 1+ set in this version, we progress it 
+        // if ALL sets of OHP in Workout A (Volume Day) are completed.
+        if (!ohpIncremented && workout.name.includes('Workout A')) {
+            const secondaryLift = workout.exercises[1]; // OHP is usually 2nd
+            if (secondaryLift && secondaryLift.name === 'Overhead Press') {
+                const allSetsCompleted = secondaryLift.sets.every(s => s.completed);
+                if (allSetsCompleted) {
+                    newTMs.ohp += 2.5;
+                    ohpIncremented = true;
+                }
+            }
+        }
+    });
+
+    return newTMs;
 }
 
 function createWorkoutData(workoutKey, tms) {
@@ -333,6 +413,45 @@ export function deleteTrainingWeek(weekId) {
     saveTrainingWeeks();
 }
 
+const ACCESSORY_OPTIONS = {
+    a: [
+        'Incline Dumbbell Press',
+        'Dumbbell Flyes',
+        'Lateral Raises',
+        'Tricep Pushdowns',
+        'Pendlay Rows',
+        'Face Pulls',
+        'Bicep Curls'
+    ],
+    b: [
+        'Leg Curls',
+        'Leg Extensions',
+        'Calf Raises',
+        'Hanging Leg Raises',
+        'Cable Crunches',
+        'Romanian Deadlift',
+        'Plank'
+    ],
+    c: [
+        'Weighted Pull-ups',
+        'Lat Pulldowns',
+        'Hammer Curls',
+        'Dips',
+        'Skullcrushers',
+        'Dumbbell Shoulder Press',
+        'Seated Row'
+    ],
+    d: [
+        'Leg Press',
+        'Lunges',
+        'Hyperextensions',
+        'Planks',
+        'Shrugs',
+        'Farmers Walk',
+        'Box Jumps'
+    ]
+};
+
 export function renderWorkoutDetail(week, workoutKey, container, onSetToggle, onSetEdit) {
     const workout = week.workouts[workoutKey];
 
@@ -351,7 +470,16 @@ export function renderWorkoutDetail(week, workoutKey, container, onSetToggle, on
             ${workout.exercises.map((exercise, exIdx) => `
                 <div class="exercise-card ${exercise.type}">
                     <div class="exercise-header">
-                        <h3>${exercise.name}</h3>
+                        ${exercise.type === 'accessory' 
+                            ? `<select class="accessory-select" data-exercise="${exIdx}">
+                                 <option value="" disabled ${!ACCESSORY_OPTIONS[workoutKey].includes(exercise.name) && !exercise.name.startsWith('Accessory') ? 'selected' : ''}>Wähle eine Übung...</option>
+                                 ${ACCESSORY_OPTIONS[workoutKey].map(opt => 
+                                     `<option value="${opt}" ${exercise.name === opt ? 'selected' : ''}>${opt}</option>`
+                                 ).join('')}
+                                 ${!ACCESSORY_OPTIONS[workoutKey].includes(exercise.name) ? `<option value="${exercise.name}" selected>${exercise.name}</option>` : ''}
+                               </select>`
+                            : `<h3>${exercise.name}</h3>`
+                        }
                         <span class="exercise-type-badge ${exercise.type}">${getTypeLabel(exercise.type)}</span>
                     </div>
                     <div class="sets-container">
@@ -369,6 +497,7 @@ export function renderWorkoutDetail(week, workoutKey, container, onSetToggle, on
                                     <input type="number"
                                            class="actual-weight"
                                            placeholder="kg"
+                                           step="2.5"
                                            value="${set.actualWeight || ''}"
                                            data-exercise="${exIdx}"
                                            data-set="${setIdx}">
@@ -394,6 +523,19 @@ export function renderWorkoutDetail(week, workoutKey, container, onSetToggle, on
     `;
 
     // Add event listeners
+    
+    // Accessory Dropdown Listeners
+    container.querySelectorAll('.accessory-select').forEach(select => {
+        select.addEventListener('change', (e) => {
+            const exIdx = parseInt(e.target.dataset.exercise);
+            const newName = e.target.value;
+            
+            // Update state
+            workout.exercises[exIdx].name = newName;
+            saveTrainingWeeks();
+        });
+    });
+
     container.querySelectorAll('.set-complete-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const exIdx = parseInt(btn.dataset.exercise);
