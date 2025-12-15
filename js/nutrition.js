@@ -150,13 +150,10 @@ async function searchFood(query) {
         (p.brands && p.brands.toLowerCase().includes(query.toLowerCase()))
     );
 
-    // 2. API Search (using Open Food Facts API v2 search endpoint)
+    // 2. API Search
     try {
-        const response = await fetch(`https://world.openfoodfacts.org/api/v2/search?q=${encodeURIComponent(query)}&fields=product_name,brands,image_front_small_url,nutriments,code&page_size=20`, {
-            headers: {
-                'User-Agent': 'FitnessTrackerApp - Web - 1.0.0' // Identify your application
-            }
-        });
+        // Revert to search.pl but REMOVE headers to avoid triggering CORS preflight (OPTIONS) check failure.
+        const response = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&page=1`);
         const data = await response.json();
         const apiProducts = data.products || [];
 
